@@ -800,6 +800,7 @@ public class HRegionServer implements ClientProtos.ClientService.BlockingInterfa
       long lastMsg = 0;
       long oldRequestCount = -1;
       // The main run loop.
+        LOG.info("---------Enter second loop...");
       while (!this.stopped && isHealthy()) {
         if (!isClusterUp()) {
           if (isOnlineRegionsEmpty()) {
@@ -978,6 +979,7 @@ public class HRegionServer implements ClientProtos.ClientService.BlockingInterfa
 
   void tryRegionServerReport(long reportStartTime, long reportEndTime)
   throws IOException {
+      LOG.info("---------In tryRegionServerReport method...");
     HBaseProtos.ServerLoad sl = buildServerLoad(reportStartTime, reportEndTime);
     try {
       RegionServerReportRequest.Builder request = RegionServerReportRequest.newBuilder();
@@ -986,8 +988,9 @@ public class HRegionServer implements ClientProtos.ClientService.BlockingInterfa
       request.setServer(ProtobufUtil.toServerName(sn));
       request.setLoad(sl);
       this.rssStub.regionServerReport(null, request.build());
+        LOG.info("---------Quit tryRegionServerReport normally...");
     } catch (ServiceException se) {
-        se.printStackTrace();
+        LOG.error("---------Exception MSG: " + se.getMessage());
       IOException ioe = ProtobufUtil.getRemoteException(se);
       if (ioe instanceof YouAreDeadException) {
         // This will be caught and handled as a fatal error in run()
