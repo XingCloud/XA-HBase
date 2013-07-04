@@ -800,7 +800,6 @@ public class HRegionServer implements ClientProtos.ClientService.BlockingInterfa
       long lastMsg = 0;
       long oldRequestCount = -1;
       // The main run loop.
-        LOG.info("---------Enter second loop...");
       while (!this.stopped && isHealthy()) {
         if (!isClusterUp()) {
           if (isOnlineRegionsEmpty()) {
