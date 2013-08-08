@@ -22,20 +22,15 @@ package org.apache.hadoop.hbase.tool;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
+import org.apache.hadoop.hbase.*;
+import org.apache.hadoop.hbase.client.*;
 import org.apache.hadoop.hbase.exceptions.TableNotFoundException;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 
 import org.apache.hadoop.conf.Configuration;
 
-import org.apache.hadoop.hbase.HRegionInfo;
-import org.apache.hadoop.hbase.HTableDescriptor;
-import org.apache.hadoop.hbase.HColumnDescriptor;
-import org.apache.hadoop.hbase.HBaseConfiguration;
-
-import org.apache.hadoop.hbase.client.Get;
-import org.apache.hadoop.hbase.client.HTable;
-import org.apache.hadoop.hbase.client.HBaseAdmin;
+import java.util.Arrays;
 
 /**
  * HBase Canary Tool, that that can be used to do
@@ -230,17 +225,40 @@ public final class Canary implements Tool {
   private void sniffRegion(HRegionInfo region, HTable table) throws Exception {
     HTableDescriptor tableDesc = table.getTableDescriptor();
     for (HColumnDescriptor column : tableDesc.getColumnFamilies()) {
-      Get get = new Get(region.getStartKey());
-      get.addFamily(column.getName());
+      byte[] startKey = region.getStartKey();
+      if (Arrays.equals(startKey, HConstants.EMPTY_BYTE_ARRAY)){
+        //this region is the first region
+        ResultScanner scanner = null;
+        try {
+          Scan scan = new Scan();
+          scan.addFamily(column.getName());
 
-      try {
-        long startTime = System.currentTimeMillis();
-        table.get(get);
-        long time = System.currentTimeMillis() - startTime;
+          long startTime = System.currentTimeMillis();
+          scanner = table.getScanner(scan);
+          scanner.next();
+          long time = System.currentTimeMillis() - startTime;
 
-        sink.publishReadTiming(region, column, time);
-      } catch (Exception e) {
-        sink.publishReadFailure(region, column);
+          sink.publishReadTiming(region, column, time);
+        } catch (Exception e) {
+          sink.publishReadFailure(region, column);
+        } finally {
+          if (scanner != null){
+              scanner.close();
+          }
+        }
+      } else {
+        Get get = new Get(startKey);
+        get.addFamily(column.getName());
+
+        try {
+          long startTime = System.currentTimeMillis();
+          table.get(get);
+          long time = System.currentTimeMillis() - startTime;
+
+          sink.publishReadTiming(region, column, time);
+        } catch (Exception e) {
+          sink.publishReadFailure(region, column);
+        }
       }
     }
   }
