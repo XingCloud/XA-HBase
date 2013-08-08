@@ -88,6 +88,7 @@ public final class Canary implements Tool {
 
   public Canary(Sink sink) {
     this.sink = sink;
+    this.conf = HBaseConfiguration.create();
   }
 
   @Override
@@ -147,8 +148,7 @@ public final class Canary implements Tool {
       }
     }
 
-    // initialize HBase conf and admin
-    if (conf == null) conf = HBaseConfiguration.create();
+    // initialize HBase admin
     admin = new HBaseAdmin(conf);
 
     // lets the canary monitor the cluster
